@@ -27,6 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     nisar.add_argument("--max-escenas", type=int, default=2)
     nisar.add_argument("--resolucion", type=float, default=200)
     nisar.add_argument("--conservar", action="store_true", help="No borra los HDF5 descargados.")
+    nisar.add_argument("--escenas", nargs="+", default=None, help="Títulos (o prefijos) de gránulos concretos a procesar.")
 
     args = parser.parse_args(argv)
     logging.basicConfig(
@@ -61,6 +62,7 @@ def main(argv: list[str] | None = None) -> int:
             max_escenas=args.max_escenas,
             resolucion_m=args.resolucion,
             conservar=args.conservar,
+            escenas=args.escenas,
         )
         return 0
     parser.error(f"Comando desconocido: {args.comando}")

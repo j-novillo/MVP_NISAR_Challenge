@@ -39,6 +39,8 @@ Salidas, todas ligeras y en el repositorio:
 | `data/processed/municipios_indice.gpkg` | Lo mismo en EPSG:25830. |
 | `data/processed/municipios_indice.csv` | Tabla sin geometría. |
 | `data/processed/nisar_escenas_galicia.json` | Inventario público de escenas NISAR GCOV. |
+| `data/processed/nisar_municipios.csv` | HV municipal de las ocho escenas de octubre de 2026. |
+| `data/processed/nisar_lectura.json` | Qué escena se leyó, su EPSG y cuántos municipios cubrió al 50 %. |
 | `data/processed/validacion.json` | Captura de hectáreas, AUC y quintiles del preset equilibrado. |
 | `data/processed/validacion_quintiles.png` | El gráfico de esa validación. |
 | `data/processed/manifiesto.json` | Qué fase funcionó, cuál falló y con qué fuente. |
@@ -57,7 +59,7 @@ El procesado sí. El token no se escribe en ningún fichero del repo. Se exporta
 
 ```bash
 export EARTHDATA_TOKEN="pega_aqui_el_token_de_earthdata"
-python -m prioridad_galicia.cli nisar-procesar --max-escenas 2
+python -m prioridad_galicia.cli nisar-procesar --max-escenas 8 --escenas PREFIJO_DEL_TITULO
 ```
 
 También vale un `.env` en la raíz (está en `.gitignore`; la plantilla es `.env.example`):
@@ -68,11 +70,13 @@ cp .env.example .env
 python -m prioridad_galicia.cli nisar-procesar --max-escenas 2
 ```
 
-Eso descarga hasta dos HDF5 GCOV (cientos de MB cada uno), lee el HV de banda L, lo pasa a dB, aplica una mediana 3×3, lo agrega por municipio y escribe `data/processed/nisar_municipios.csv`. Por defecto borra el HDF5 al terminar. `--conservar` lo deja en `data/raw/nisar/`.
+`ASFSession.auth_with_token` no se usa. En la cuenta que procesó las escenas de este repositorio esa llamada devuelve 403 porque **la EULA de la aplicación de ASF todavía no está aceptada**. La descarga va en Bearer directo contra el `url_h5` del CMR. El detalle está en `docs/fuentes/nisar.md`.
 
-Después hay que volver a lanzar `pipeline` (la caché de lo demás evita repetir Sentinel-1) o, si el CSV ya está, el visor lo verá en cuanto el GeoJSON tenga la columna `vh_db_nisar`. El pipeline, si encuentra el CSV de una pasada anterior, lo une solo.
+El procesado lee el HV de banda L, anula el relleno por debajo de −50 dB, aplica una mediana 3×3 y combina por municipio: una escena solo cuenta si cubre al menos el 50 % de los píxeles, y el valor publicado es la mediana de esas escenas. Escribe `nisar_municipios.csv` y `nisar_lectura.json`. Por defecto borra el HDF5. `--conservar` lo deja en `data/raw/nisar/`.
 
-Sin token, el pipeline no se detiene. El manifiesto lo dice y el combustible del índice es Sentinel-1.
+En este repositorio esa pasada ya está hecha (ocho escenas del 13, 18 y 20 de octubre de 2026, 313 municipios, HV de −19,7 a −10,3 dB, correlación 0,57 con el VH de Sentinel-1). El GeoJSON del índice ya lleva `vh_db_nisar`, así que el visor enseña el interruptor sin repetir la descarga. El pipeline, si encuentra el CSV de una pasada anterior y no hay token, lo une solo.
+
+Sin token y sin ese CSV, el pipeline no se detiene. El manifiesto lo dice y el combustible del índice es Sentinel-1. Con CSV o sin él, NISAR no entra en el índice por defecto: las escenas son de octubre de 2026, posteriores a la validación.
 
 ## 4. Visor
 

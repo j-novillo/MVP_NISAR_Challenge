@@ -19,7 +19,7 @@ Lee `data/processed/municipios_indice.geojson`. Si no está, lo dice y no invent
 
 ## NISAR en la interfaz
 
-El interruptor “Sustituir el combustible por NISAR” solo aparece si `vh_db_nisar` tiene algún valor. Al activarlo, COMB pasa a ser el min-max robusto de ese HV y un aviso dice que la validación deja de ser retrospectiva. Sin la columna, un texto indica que el combustible es Sentinel-1 y remite al comando del README.
+El interruptor “Sustituir el combustible por NISAR L-band (2026)” aparece porque `vh_db_nisar` está relleno en los 313 municipios (ocho escenas del 13 al 20 de octubre de 2026). Nace apagado: el mapa de entrada es el índice de Sentinel-1. Al activarlo, COMB pasa a ser el min-max robusto de ese HV y un aviso dice que la validación deja de ser retrospectiva. La ficha enseña el HV en dB junto al VH de Sentinel-1. Sin la columna, un texto indica que el combustible es Sentinel-1 y remite al comando del README.
 
 ## Tema
 

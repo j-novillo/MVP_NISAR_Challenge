@@ -32,8 +32,10 @@ Para procesar NISAR con un token de NASA Earthdata (la búsqueda del catálogo n
 
 ```bash
 export EARTHDATA_TOKEN="el_token_que_no_se_sube_al_repositorio"
-python -m prioridad_galicia.cli nisar-procesar --max-escenas 2
+python -m prioridad_galicia.cli nisar-procesar --max-escenas 8 --escenas PREFIJO_DEL_TITULO
 ```
+
+Las ocho escenas de octubre de 2026 ya están agregadas en `data/processed/`. Los prefijos exactos y el motivo del Bearer (la cuenta aún no ha aceptado la EULA de ASF) están en [`docs/fuentes/nisar.md`](docs/fuentes/nisar.md).
 
 El detalle de cada comando, de la caché y de qué fichero es cada salida está en [`docs/como_ejecutar.md`](docs/como_ejecutar.md). La plantilla del secreto es [`.env.example`](.env.example).
 
@@ -54,7 +56,7 @@ Estos números son los de la corrida que generó los ficheros del repositorio (o
 
 - 313 municipios del WFS del IGN, con población del padrón 2025 en los 313 (tres cruces por código, porque el topónimo del IGN y el del INE no coinciden: Alfoz, Castro Caldelas y Cangas).
 - Sentinel-1 RTC: 129 escenas de junio a septiembre de 2024 en el catálogo; la mediana usa 8 (órbitas ascendente y descendente). VH municipal entre unos −18,6 y −12,2 dB. Los ocho rásteres se leyeron como gamma0 lineal y se pasaron a dB.
-- NISAR L2 GCOV sobre el recuadro de Galicia: **131 escenas** (113 de la colección provisional y 18 de la beta), de octubre de 2025 a octubre de 2026, casi todas en modo `DHDH`. No se descargó el HDF5: en esta máquina no hay `EARTHDATA_TOKEN`. El índice usa Sentinel-1.
+- NISAR L2 GCOV sobre el recuadro de Galicia: **131 escenas** en el catálogo (113 provisionales y 18 beta). De ellas se procesaron **8** gránulos reales (13, 18 y 20 de octubre de 2026, HVHV, banda L). Cubren los **313** municipios, con HV entre **−19,7 y −10,3 dB**. La correlación con el VH de Sentinel-1 es **r = 0,57**. No entran en el índice por defecto: son posteriores a la validación 2025–2026. El visor las enseña con un interruptor, apagado al abrir. La descarga usó Bearer directo porque la cuenta aún no ha aceptado la EULA de ASF (`auth_with_token` devolvía 403).
 - Historial EFFIS 2010–2024: 1050 perímetros. Validación 2025–2026: 434 perímetros, unas 128 600 ha en la intersección municipal.
 - FWI: las seis fechas de 2024 respondieron. WorldCover 2021 cubre los 313 municipios. OSM: 88 parques de bomberos y 30 653 tramos de vía principal.
 - Con el preset equilibrado, el 10 % de municipios con más prioridad concentra el **39,7 %** de las hectáreas de 2025–2026 (el azar dejaría un 10 %). El 30 % concentra el 78 %. El AUC de “ardió algo” es 0,68. Las hectáreas por quintil crecen de Q1 a Q5.
@@ -74,7 +76,7 @@ Estos números son los de la corrida que generó los ficheros del repositorio (o
 
 ## Degradación
 
-Si una fuente no responde, su columna queda vacía y el peso de ese componente se reparte entre los que sí existen. No hay municipios de relleno ni un FWI copiado de un año inventado. NISAR, sin token, no bloquea el índice: el combustible es la mediana de Sentinel-1 RTC del verano de 2024, que es anterior a los incendios con los que se valida.
+Si una fuente no responde, su columna queda vacía y el peso de ese componente se reparte entre los que sí existen. No hay municipios de relleno ni un FWI copiado de un año inventado. El combustible del índice es la mediana de Sentinel-1 RTC del verano de 2024. NISAR, aunque ya está agregado, se queda fuera de esa fórmula: las ocho escenas son de octubre de 2026 y habrían visto parte de los incendios con los que se valida.
 
 ## Licencias de los datos
 

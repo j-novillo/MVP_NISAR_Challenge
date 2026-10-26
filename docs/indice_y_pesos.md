@@ -23,6 +23,7 @@ La normalización externa es `robust_minmax`: percentil 5 a percentil 95, recort
 - El 55 % es la retrodispersión cruzada. En banda C, VH crece con el volumen de hojas y ramas finas hasta saturar. Es el término más directo de “hay estructura vegetal”.
 - El 45 % es el ratio, en decibelios. Resta el brillo que comparten VH y VV (humedad superficial, ángulo de incidencia residual) y penaliza el urbano, donde VV se dispara por el doble rebote. Sin este término, las ciudades grandes competirían con el monte.
 - No entra la fracción de WorldCover. Esa capa se enseña en la ficha (`frac_forestal`) para leer el número, pero meterla en COMB mezclaría un mapa de ocupación del suelo de 2021 con la medida SAR y rompería la lectura “esto es radar”.
+- No entra NISAR. Las ocho escenas GCOV agregadas son del 13 al 20 de octubre de 2026. El HV municipal (313/313, de −19,7 a −10,3 dB) correlaciona r = 0,57 con el VH de Sentinel-1, pero esa fecha es posterior a los incendios de la validación. Sustituirlo en COMB haría que el índice viera el monte ya quemado. El visor lo deja en un interruptor, apagado por defecto.
 
 Pesos 55/45 y no 50/50 porque, si el ratio falla en una escena, el canal que el reto pide mostrar es el de volumen. El reparto interno está en `PESOS_COMB`.
 

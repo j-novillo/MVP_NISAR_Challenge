@@ -218,9 +218,99 @@
       }
     },
     "nisar_procesado": {
-      "ok": false,
-      "motivo": "sin EARTHDATA_TOKEN en el entorno",
-      "comando": "EARTHDATA_TOKEN=tu_token python -m prioridad_galicia.cli nisar-procesar --max-escenas 2"
+      "ok": true,
+      "donde": "fuera de esta VM, con el token del usuario",
+      "descarga": "Bearer directo sobre url_h5",
+      "eula_asf": "la cuenta aún no ha aceptado la EULA de la aplicación de ASF; ASFSession.auth_with_token responde 403 EULA Acceptance Failure",
+      "escenas": 8,
+      "municipios": 313,
+      "municipios_con_hv": 313,
+      "hv_db_min": -19.73,
+      "hv_db_max": -10.32,
+      "polarizacion": "HVHV",
+      "correlacion_pearson_vh_sentinel1": 0.574,
+      "cobertura_minima": 0.5,
+      "combinacion": "mediana zonal por escena; mediana entre escenas con cobertura >= umbral",
+      "entra_en_indice": false,
+      "motivo_fuera_del_indice": "Las ocho escenas son del 13, 18 y 20 de octubre de 2026, posteriores a la validación EFFIS 2025-2026. COMB sigue siendo Sentinel-1 del verano de 2024.",
+      "escenas_usadas": [
+        {
+          "id": "G4366686159-ASF",
+          "titulo": "NISAR_L2_PR_GCOV_033_015_A_022_2005_DHDH_A_20261013T053216_20261013T053251_P05023_N_F_J_001",
+          "inicio": "2026-10-13T05:32:16.000Z",
+          "epsg": 32629,
+          "municipios_cubiertos_50": 0,
+          "paso_m": 20.0,
+          "stride": 10
+        },
+        {
+          "id": "G4366683964-ASF",
+          "titulo": "NISAR_L2_PR_GCOV_033_015_A_023_2005_DHDH_A_20261013T053250_20261013T053325_P05023_N_F_J_001",
+          "inicio": "2026-10-13T05:32:50.000Z",
+          "epsg": 32629,
+          "municipios_cubiertos_50": 310,
+          "paso_m": 20.0,
+          "stride": 10
+        },
+        {
+          "id": "G4366571071-ASF",
+          "titulo": "NISAR_L2_PR_GCOV_033_015_A_024_2005_DHDH_A_20261013T053324_20261013T053333_P05023_N_P_J_001",
+          "inicio": "2026-10-13T05:33:24.000Z",
+          "epsg": 32629,
+          "municipios_cubiertos_50": 22,
+          "paso_m": 20.0,
+          "stride": 10
+        },
+        {
+          "id": "G4379021322-ASF",
+          "titulo": "NISAR_L2_PR_GCOV_033_087_A_023_2005_DHDH_A_20261018T052429_20261018T052505_P05023_N_F_J_001",
+          "inicio": "2026-10-18T05:24:29.000Z",
+          "epsg": 32630,
+          "municipios_cubiertos_50": 28,
+          "paso_m": 20.0,
+          "stride": 10
+        },
+        {
+          "id": "G4378957807-ASF",
+          "titulo": "NISAR_L2_PR_GCOV_033_087_A_024_2005_DHDH_A_20261018T052504_20261018T052513_P05023_N_P_J_001",
+          "inicio": "2026-10-18T05:25:04.000Z",
+          "epsg": 32629,
+          "municipios_cubiertos_50": 23,
+          "paso_m": 20.0,
+          "stride": 10
+        },
+        {
+          "id": "G4382611745-ASF",
+          "titulo": "NISAR_L2_PR_GCOV_033_116_A_022_2005_DHDH_A_20261020T054035_20261020T054109_P05023_N_F_J_001",
+          "inicio": "2026-10-20T05:40:35.000Z",
+          "epsg": 32629,
+          "municipios_cubiertos_50": 0,
+          "paso_m": 20.0,
+          "stride": 10
+        },
+        {
+          "id": "G4383722125-ASF",
+          "titulo": "NISAR_L2_PR_GCOV_033_124_D_067_2005_DHDH_A_20261020T192528_20261020T192603_P05023_N_F_J_001",
+          "inicio": "2026-10-20T19:25:28.000Z",
+          "epsg": 32629,
+          "municipios_cubiertos_50": 105,
+          "paso_m": 20.0,
+          "stride": 10
+        },
+        {
+          "id": "G4383722161-ASF",
+          "titulo": "NISAR_L2_PR_GCOV_033_124_D_068_2005_DHDH_A_20261020T192602_20261020T192637_P05023_N_F_J_001",
+          "inicio": "2026-10-20T19:26:02.000Z",
+          "epsg": 32629,
+          "municipios_cubiertos_50": 5,
+          "paso_m": 20.0,
+          "stride": 10
+        }
+      ],
+      "archivos": [
+        "data/processed/nisar_municipios.csv",
+        "data/processed/nisar_lectura.json"
+      ]
     }
   },
   "comando_nisar": "EARTHDATA_TOKEN=tu_token python -m prioridad_galicia.cli nisar-procesar --max-escenas 2",
@@ -302,5 +392,6 @@
     "acces": 0.1
   },
   "nisar_en_indice": false,
-  "nota_nisar": "El índice por defecto usa Sentinel-1 del verano de 2024, anterior a la validación 2025-2026. NISAR (archivo 2026) no entra en ese índice: sería posterior a parte de los incendios. Si se procesa, el visor puede sustituir el combustible para ver el estado L-band, con el aviso correspondiente."
+  "nota_nisar": "El índice por defecto usa Sentinel-1 del verano de 2024, anterior a la validación 2025-2026. Las ocho escenas NISAR procesadas son del 13, 18 y 20 de octubre de 2026 (HV de -19.7 a -10.3 dB en los 313 municipios; correlación de Pearson con el VH de Sentinel-1 r=0.57). No entran en COMB. El visor puede sustituir el combustible con el interruptor, que nace apagado. La descarga usó Authorization: Bearer sobre url_h5 porque la cuenta aún no ha aceptado la EULA de ASF (auth_with_token devuelve 403).",
+  "correlacion_vh_s1_hv_nisar": 0.574
 }

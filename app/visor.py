@@ -88,7 +88,7 @@ def main() -> None:
             usar_nisar = st.toggle(
                 "Sustituir el combustible por NISAR L-band (2026)",
                 value=False,
-                help="No es comparable con la validación 2025-2026: NISAR es posterior.",
+                help="Escenas del 13 al 20 de octubre de 2026. No es comparable con la validación 2025-2026.",
             )
         else:
             st.info("NISAR no está agregado. El combustible es Sentinel-1. El comando para procesarlo está en el README.")

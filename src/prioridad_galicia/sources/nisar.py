@@ -1,8 +1,11 @@
 """NISAR L2 GCOV: catálogo público y procesado con token de Earthdata.
 
-La búsqueda en CMR no pide cuenta. La descarga del HDF5 sí: ``asf_search``
-autentica con ``EARTHDATA_TOKEN`` mediante ``ASFSession.auth_with_token``.
-Sin token, o si la lectura falla, el índice sigue con Sentinel-1.
+La búsqueda en CMR no pide cuenta. La descarga del HDF5 sí: lee
+``EARTHDATA_TOKEN`` y pide el ``.h5`` con ``Authorization: Bearer``.
+``ASFSession.auth_with_token`` no se usa: en esta cuenta devuelve 403
+porque la EULA de la aplicación de ASF aún no está aceptada, y el Bearer
+directo sobre ``url_h5`` sí descarga. Sin token, o si la lectura falla,
+el índice sigue con Sentinel-1.
 """
 
 from __future__ import annotations
@@ -29,6 +32,7 @@ from prioridad_galicia.config import (
     POLARIZACIONES_POTENCIA,
     RAW,
     SALIDA_NISAR,
+    SALIDA_NISAR_LECTURA,
     SALIDA_NISAR_ZONAL,
 )
 from prioridad_galicia.geo import crear_rejilla, estadistica_zonal, rasterizar_zonas, reproyectar_a_rejilla
@@ -70,7 +74,11 @@ def buscar_nisar(destino: Path | None = None) -> dict:
     return catalogo
 
 
-def procesar_nisar(municipios, max_escenas: int = 2, resolucion_m: float = 200, conservar: bool = False) -> pd.DataFrame:
+# Fracción mínima de píxeles válidos de un municipio para aceptar una escena.
+COBERTURA_MINIMA = 0.5
+
+
+def procesar_nisar(municipios, max_escenas: int = 2, resolucion_m: float = 200, conservar: bool = False, escenas: list[str] | None = None) -> pd.DataFrame:
     """Descarga hasta ``max_escenas`` HDF5 y agrega HV (o HH) por municipio.
 
     Exige ``EARTHDATA_TOKEN``. Borra el HDF5 al terminar, salvo ``conservar``.
@@ -82,37 +90,65 @@ def procesar_nisar(municipios, max_escenas: int = 2, resolucion_m: float = 200, 
             "y ejecuta: EARTHDATA_TOKEN=... python -m prioridad_galicia.cli nisar-procesar --max-escenas 2"
         )
     catalogo = buscar_nisar()
-    elegidas = _elegir(catalogo["escenas"], max_escenas)
+    if escenas:
+        elegidas = [e for e in catalogo["escenas"] if any(e["titulo"].startswith(t) for t in escenas)][:max_escenas]
+    else:
+        elegidas = _elegir(catalogo["escenas"], max_escenas)
     if not elegidas:
         raise RuntimeError("CMR no devolvió escenas NISAR GCOV sobre Galicia.")
     sesion = _sesion(token)
     alto, ancho, transform = crear_rejilla(limites_trabajo(municipios), resolucion_m)
-    capas = []
     notas = []
     RAW.mkdir(parents=True, exist_ok=True)
     carpeta = RAW / "nisar"
     carpeta.mkdir(parents=True, exist_ok=True)
+    zonas = rasterizar_zonas(municipios.geometry, alto, ancho, transform)
+    n = len(municipios)
+    pixeles_muni = np.bincount(zonas.ravel(), minlength=n + 1)[1:].astype(float)
+    medianas, fracciones = [], []
     for escena in elegidas:
         ruta = _descargar(escena, carpeta, sesion)
         try:
             array, tr, crs, info = leer_gcov(ruta, resolucion_objetivo_m=resolucion_m)
             array = filtro_mediana(array, size=3)
             rejilla = reproyectar_a_rejilla(array, tr, crs, transform, (alto, ancho), CRS_TRABAJO)
-            capas.append(rejilla)
-            notas.append({"id": escena["id"], **info})
+            # Combinación por municipio: mediana zonal de cada escena por separado
+            # y fracción de píxeles del municipio con dato válido en esa escena.
+            validos = np.bincount(zonas[np.isfinite(rejilla)], minlength=n + 1)[1:]
+            fracciones.append(np.divide(validos, pixeles_muni, out=np.zeros(n), where=pixeles_muni > 0))
+            medianas.append(estadistica_zonal(zonas, rejilla, n, "median"))
+            notas.append({"id": escena["id"], "titulo": escena["titulo"], "inicio": escena.get("inicio"),
+                          "municipios_cubiertos_50": int((fracciones[-1] >= COBERTURA_MINIMA).sum()), **info})
         finally:
             if ruta.exists() and not conservar:
                 ruta.unlink()
-    if not capas:
+    if not medianas:
         raise RuntimeError("No se pudo leer ninguna escena NISAR descargada.")
-    mediana = np.nanmedian(np.stack(capas), axis=0).astype(np.float32)
-    zonas = rasterizar_zonas(municipios.geometry, alto, ancho, transform)
+    M = np.vstack(medianas)
+    F = np.vstack(fracciones)
+    usar = F >= COBERTURA_MINIMA  # solo escenas que cubren >= umbral del municipio
+    M_ok = np.where(usar, M, np.nan)
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        valor = np.nanmedian(M_ok, axis=0)  # mediana entre escenas válidas
     zonal = municipios[["codigo_ine"]].copy()
-    zonal["vh_db_nisar"] = estadistica_zonal(zonas, mediana, len(municipios), "median")
-    zonal["n_escenas_nisar"] = len(capas)
+    zonal["vh_db_nisar"] = valor
+    zonal["n_escenas_nisar"] = usar.sum(axis=0)
+    zonal["cobertura_max_nisar"] = np.round(F.max(axis=0), 3)
+    zonal["escenas_nisar"] = [";".join(notas[i]["id"] for i in np.flatnonzero(usar[:, j])) for j in range(n)]
     zonal["polarizacion_nisar"] = notas[-1].get("polarizacion")
     CACHE.mkdir(parents=True, exist_ok=True)
-    (CACHE / "nisar_lectura.json").write_text(_json({"escenas": notas}), encoding="utf-8")
+    lectura = _json(
+        {
+            "escenas": notas,
+            "cobertura_minima": COBERTURA_MINIMA,
+            "combinacion": "mediana zonal por escena; mediana entre escenas con cobertura >= umbral",
+        }
+    )
+    (CACHE / "nisar_lectura.json").write_text(lectura, encoding="utf-8")
+    SALIDA_NISAR_LECTURA.parent.mkdir(parents=True, exist_ok=True)
+    SALIDA_NISAR_LECTURA.write_text(lectura, encoding="utf-8")
     SALIDA_NISAR_ZONAL.parent.mkdir(parents=True, exist_ok=True)
     zonal.to_csv(SALIDA_NISAR_ZONAL, index=False)
     logger.info("NISAR zonal escrito en %s", SALIDA_NISAR_ZONAL)
@@ -196,7 +232,10 @@ def _a_db(array: np.ndarray) -> tuple[np.ndarray, str]:
         datos = array.astype(np.float32, copy=True)
         datos[datos <= -100] = np.nan
         return datos, "ya_db"
-    return gamma0_a_db(array), "lineal_a_db"
+    datos = gamma0_a_db(array).astype(np.float32)
+    # Píxeles a 0/casi 0 (relleno en bordes de escena) dan ~-140 dB: se anulan.
+    datos[datos < -50] = np.nan
+    return datos, "lineal_a_db"
 
 
 def _dataset_polarizacion(hdf: h5py.File) -> list[str]:
@@ -254,7 +293,13 @@ def _buscar_epsg(obj) -> int | None:
         if isinstance(actual, h5py.Group):
             for clave in ("projection", "crs", "spatial_ref"):
                 if clave in actual and isinstance(actual[clave], h5py.Dataset):
-                    crudo = actual[clave][()]
+                    ds = actual[clave]
+                    # NISAR GCOV: dataset escalar con el EPSG y atributo epsg_code.
+                    if "epsg_code" in ds.attrs:
+                        return int(np.array(ds.attrs["epsg_code"]).reshape(-1)[0])
+                    if np.issubdtype(ds.dtype, np.integer) and ds.size == 1:
+                        return int(np.array(ds[()]).reshape(-1)[0])
+                    crudo = ds[()]
                     texto = crudo.decode() if isinstance(crudo, bytes) else str(crudo)
                     if "EPSG" in texto.upper():
                         coincidencia = re.search(r"EPSG[\"']?[,:](\d+)", texto.upper())
@@ -322,13 +367,39 @@ def _elegir(escenas: list[dict], max_escenas: int) -> list[dict]:
     def orden(escena: dict) -> tuple:
         provisional = 0 if "PROVISIONAL" in escena["coleccion"] else 1
         cruzada = 0 if escena.get("modo_polarimetrico") and "V" in escena["modo_polarimetrico"] else 1
-        return (provisional, cruzada, escena.get("inicio") or "")
+        # Las más recientes primero (antes cogía las más antiguas).
+        return (provisional, cruzada, -_ts(escena.get("inicio")))
 
     con_url = [escena for escena in escenas if escena.get("titulo")]
     return sorted(con_url, key=orden)[:max_escenas]
 
 
+def _ts(valor) -> float:
+    try:
+        return pd.Timestamp(valor).timestamp()
+    except Exception:
+        return 0.0
+
+
 def _descargar(escena: dict, carpeta: Path, sesion) -> Path:
+    """Descarga directa del HDF5 por url_h5 con cabecera Bearer.
+
+    asf_search.auth_with_token falla (403 "EULA Acceptance Failure") si la
+    cuenta no ha autorizado la app de ASF, aunque el token sea válido para
+    descargar. La descarga directa funciona igualmente.
+    """
+    url = escena.get("url_h5")
+    if url:
+        destino = carpeta / url.rsplit("/", 1)[-1]
+        if not destino.exists():
+            parcial = destino.with_suffix(".part")
+            with sesion.get(url, stream=True, timeout=600) as r:
+                r.raise_for_status()
+                with open(parcial, "wb") as f:
+                    for trozo in r.iter_content(8 << 20):
+                        f.write(trozo)
+            parcial.rename(destino)
+        return destino
     import asf_search as asf
 
     nombre = escena["titulo"]
@@ -345,10 +416,13 @@ def _descargar(escena: dict, carpeta: Path, sesion) -> Path:
 
 
 def _sesion(token: str):
-    import asf_search as asf
+    import requests
 
-    # auth_with_token valida el token contra Earthdata y no lo deja en el repo.
-    return asf.ASFSession().auth_with_token(token)
+    # Sesión con Bearer; requests conserva la cabecera en las redirecciones
+    # dentro de earthdatacloud y la quita al saltar a CloudFront (URL firmada).
+    sesion = requests.Session()
+    sesion.headers["Authorization"] = f"Bearer {token}"
+    return sesion
 
 
 def _json(objeto) -> str:

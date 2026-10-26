@@ -6,7 +6,7 @@ import pandas as pd
 from shapely.geometry import box
 
 from prioridad_galicia.geo import crear_rejilla, estadistica_zonal, rasterizar_zonas
-from prioridad_galicia.sources.nisar import filtro_mediana, gamma0_a_db, leer_gcov
+from prioridad_galicia.sources.nisar import _a_db, _buscar_epsg, _elegir, filtro_mediana, gamma0_a_db, leer_gcov
 from prioridad_galicia.sources.sentinel1 import fraccion_bbox, preparar_retrodispersion, seleccionar_escenas
 from prioridad_galicia.validation import evaluar
 
@@ -84,6 +84,34 @@ def test_seleccion_de_escenas_limita_el_numero():
     elegidas = seleccionar_escenas(items, max_escenas=4)
     assert 1 <= len(elegidas) <= 4
     assert fraccion_bbox(oeste, (-9.45, 41.70, -6.55, 43.95)) > 0.2
+
+
+def test_relleno_por_debajo_de_menos_50_db_queda_en_nan():
+    lineal = np.array([0.1, 1e-8, 0.0], dtype=np.float32)
+    decibelios, modo = _a_db(lineal)
+    assert modo == "lineal_a_db"
+    assert abs(float(decibelios[0]) - (-10)) < 1e-3
+    assert np.isnan(decibelios[1]) and np.isnan(decibelios[2])
+
+
+def test_epsg_code_del_dataset_projection(tmp_path: Path):
+    ruta = tmp_path / "proyeccion.h5"
+    with h5py.File(ruta, "w") as hdf:
+        grupo = hdf.create_group("grids")
+        proyeccion = grupo.create_dataset("projection", data=np.int32(0))
+        proyeccion.attrs["epsg_code"] = np.int32(32629)
+    with h5py.File(ruta, "r") as hdf:
+        assert _buscar_epsg(hdf["grids"]) == 32629
+
+
+def test_elegir_prefiere_la_escena_provisional_mas_reciente():
+    escenas = [
+        {"titulo": "vieja", "coleccion": "NISAR_L2_GCOV_PROVISIONAL_V1", "modo_polarimetrico": "DHDH", "inicio": "2025-11-01T00:00:00Z"},
+        {"titulo": "nueva", "coleccion": "NISAR_L2_GCOV_PROVISIONAL_V1", "modo_polarimetrico": "DHDH", "inicio": "2026-10-20T00:00:00Z"},
+        {"titulo": "beta", "coleccion": "NISAR_L2_GCOV_BETA_V1", "modo_polarimetrico": "DHDH", "inicio": "2026-10-21T00:00:00Z"},
+    ]
+    elegida = _elegir(escenas, max_escenas=1)
+    assert elegida[0]["titulo"] == "nueva"
 
 
 def test_evaluar_concentra_las_hectareas_en_la_prioridad_alta():

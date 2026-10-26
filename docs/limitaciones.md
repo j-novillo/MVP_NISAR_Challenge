@@ -4,7 +4,7 @@ Están escritas para decirlas en voz alta, no para esconderlas en un anexo.
 
 | Límite | Qué implica aquí |
 |---|---|
-| NISAR revisita en días, no en horas, y el archivo sobre Galicia empieza en 2026. | El índice de prevención usa Sentinel-1 de 2024. NISAR se lista, se puede procesar con token y se puede ver en el visor, pero no se vende como predictor de 2025. |
+| Las ocho escenas NISAR procesadas son del 13 al 20 de octubre de 2026. | Van después de la validación. El índice por defecto sigue en Sentinel-1 de 2024. El HV (313 municipios, −19,7 a −10,3 dB, r = 0,57 con el VH de banda C) se mira en el visor, con el interruptor apagado al entrar. |
 | La banda C satura en masas densas. | VH ordena municipios, no pesa toneladas. Dos concellos de eucalipto adulto pueden salir parecidos aunque uno tenga más biomasa de la que la banda C distingue. La banda L, cuando haya un verano entero anterior a la campaña, es la que afloja ese tope. |
 | El SAR del índice está agregado a 400 m y con pocas fechas. | Speckle y ángulo de incidencia se diluyen en la mediana municipal. Se pierde el variation dentro del concello: este mapa no dice en qué ladera desbrozar. |
 | Mezcla de órbitas ascendente y descendente. | La mediana no está hecha sobre una sola geometría de incidencia. Es más estable para un proxy y menos limpia para una inversión biofísica. |

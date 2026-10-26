@@ -154,12 +154,11 @@ flowchart TD
   CMR[CMR granules.json<br/>bbox de Galicia] --> CAT[nisar_escenas_galicia.json]
   CAT --> P{EARTHDATA_TOKEN?}
   P -->|no| DEG[El índice sigue con Sentinel-1<br/>y el README deja el comando]
-  P -->|sí| AUTH[ASFSession.auth_with_token]
-  AUTH --> DL[granule_search + download]
-  DL --> H5[leer_gcov<br/>HVHV, stride, dB]
+  P -->|sí| AUTH["GET url_h5<br/>Authorization: Bearer"]
+  AUTH --> H5["leer_gcov<br/>HVHV, epsg_code, dB<br/>relleno por debajo de -50 dB a NaN"]
   H5 --> MED[filtro_mediana 3x3]
-  MED --> ZON[reproyección 25830<br/>y mediana municipal]
-  ZON --> CSV[nisar_municipios.csv]
+  MED --> ZON["mediana zonal por escena<br/>solo si cubre al menos el 50 por ciento"]
+  ZON --> CSV["vh_db_nisar =<br/>mediana entre escenas válidas"]
   CSV --> UI[El visor puede sustituir COMB<br/>con un aviso]
 ```
 
@@ -175,30 +174,43 @@ Comando, sin token:
 python -m prioridad_galicia.cli nisar-buscar
 ```
 
-### 9.2 Autenticación
+### 9.2 Autenticación y por qué la descarga va con Bearer
 
-El token se crea en el perfil de [Earthdata Login](https://urs.earthdata.nasa.gov/profile), pestaña de tokens, después de haber aceptado las condiciones del ASF. Se lee **solo** de la variable de entorno `EARTHDATA_TOKEN`. Hay una plantilla en `.env.example`. El archivo `.env` está en `.gitignore`. Ningún módulo imprime el token: `auth_with_token` lo envía a Earthdata para validarlo y lo guarda en la sesión HTTP de `asf_search`, no en el repositorio.
+El token se crea en el perfil de [Earthdata Login](https://urs.earthdata.nasa.gov/profile), pestaña de tokens. Se lee **solo** de la variable de entorno `EARTHDATA_TOKEN`. Hay una plantilla en `.env.example`. El archivo `.env` está en `.gitignore`. Ningún módulo imprime el token.
+
+`ASFSession.auth_with_token` no sirve en la cuenta con la que se procesó este repositorio. ASF responde **403 EULA Acceptance Failure**: el token es válido para Earthdata, pero esa cuenta todavía no ha aceptado la EULA de la aplicación de ASF. La descarga directa del enlace `url_h5` que ya trae el CMR sí funciona. `_sesion` abre un `requests.Session` con `Authorization: Bearer <token>`. Requests mantiene la cabecera mientras la redirección se queda en `earthdatacloud.nasa.gov` y la quita al saltar a la URL firmada de CloudFront, que es lo que el almacén espera. `_descargar` escribe el HDF5 en un `.part` y solo lo renombra al terminar. Si el gránulo no trae `url_h5`, queda el camino de `asf_search` como último recurso.
 
 ```bash
 export EARTHDATA_TOKEN="el_token_que_no_se_comparte"
 python -m prioridad_galicia.cli nisar-procesar --max-escenas 2
 ```
 
-Equivalente, si el token está en `.env` en la raíz del repo ( `python-dotenv` lo carga al arrancar el CLI ):
+Para repetir exactamente las ocho escenas de octubre de 2026 que están en `data/processed/`:
 
 ```bash
-python -m prioridad_galicia.cli nisar-procesar --max-escenas 2
+python -m prioridad_galicia.cli nisar-procesar --max-escenas 8 --escenas \
+  NISAR_L2_PR_GCOV_033_015_A_022_2005_DHDH_A_20261013T053216 \
+  NISAR_L2_PR_GCOV_033_015_A_023_2005_DHDH_A_20261013T053250 \
+  NISAR_L2_PR_GCOV_033_015_A_024_2005_DHDH_A_20261013T053324 \
+  NISAR_L2_PR_GCOV_033_087_A_023_2005_DHDH_A_20261018T052429 \
+  NISAR_L2_PR_GCOV_033_087_A_024_2005_DHDH_A_20261018T052504 \
+  NISAR_L2_PR_GCOV_033_116_A_022_2005_DHDH_A_20261020T054035 \
+  NISAR_L2_PR_GCOV_033_124_D_067_2005_DHDH_A_20261020T192528 \
+  NISAR_L2_PR_GCOV_033_124_D_068_2005_DHDH_A_20261020T192602
 ```
+
+`--escenas` acepta títulos o prefijos. Sin esa lista, `_elegir` coge las más recientes (antes cogía las más antiguas), sigue prefiriendo la colección provisional y un modo con canal cruzado, y corta en `--max-escenas`.
 
 Qué hace `procesar_nisar`:
 
 1. Vuelve a buscar para tener títulos frescos.
-2. Elige como mucho `--max-escenas` gránulos. Prefiere la colección provisional y un modo cuyo token lleve `V` (hay canal cruzado).
-3. `ASFSession().auth_with_token(token)` y `granule_search([titulo])`.
-4. `download` al directorio `data/raw/nisar/`, que no se versiona.
-5. `leer_gcov`, `filtro_mediana`, reproyección a la misma rejilla municipal y mediana zonal.
-6. Escribe `data/processed/nisar_municipios.csv`.
-7. Borra el HDF5 (cada uno ronda los 600 MB) salvo que se pase `--conservar`.
+2. Elige los gránulos (`--escenas` o `_elegir`).
+3. Descarga cada HDF5 a `data/raw/nisar/` con Bearer. Esa carpeta no se versiona.
+4. `leer_gcov` lee HVHV de `frequencyA`, toma el EPSG del atributo `epsg_code` del dataset `projection` (si el valor es un entero suelto también vale; si no hay CRS, la escena se rechaza), pasa a dB y anula lo que queda por debajo de −50 dB.
+5. `filtro_mediana` 3×3 y reproyección a la rejilla municipal (200 m, EPSG:25830).
+6. Por cada escena y municipio calcula la mediana zonal y la fracción de píxeles válidos. Solo cuenta la escena si cubre al menos el 50 % del municipio (`COBERTURA_MINIMA`). `vh_db_nisar` es la mediana de esas escenas.
+7. Escribe `data/processed/nisar_municipios.csv` y `data/processed/nisar_lectura.json`.
+8. Borra el HDF5 (varios cientos de MB, a veces cerca de 2 GB) salvo `--conservar`.
 
 Si el token falta, caduca o el HDF5 no trae la estructura esperada, la excepción sube al pipeline, queda anotada en el manifiesto y **el índice se calcula igual con Sentinel-1**. No hay un NISAR sintético de relleno.
 
@@ -210,21 +222,23 @@ Si el token falta, caduca o el HDF5 no trae la estructura esperada, la excepció
 2. `_preferir` escoge HVHV de `frequencyA` si existe.
 3. Lee los ejes `xCoordinates` e `yCoordinates` del mismo grupo (también acepta `x_coordinates` / `y`).
 4. Orienta el array a (filas = y, columnas = x). Si las formas no casan, aborta esa escena en lugar de transponer al azar.
-5. Calcula el paso de malla (mediana de las diferencias de X) y un `stride` para acercarse a la resolución pedida (200 m en el comando de procesado). Un GCOV a ~20 m se lee de 10 en 10.
-6. Busca un atributo con `epsg` en el nombre, en el grupo y en su padre. Si no hay CRS, **no inventa el huso**: la escena se rechaza y el mensaje lo dice.
-7. Construye el `Affine` de rasterio con el centro del primer píxel y el paso, y convierte a dB.
+5. Calcula el paso de malla (mediana de las diferencias de X) y un `stride` para acercarse a la resolución pedida (200 m en el comando de procesado). Un GCOV a ~20 m se lee de 10 en 10. En las ocho escenas reales el paso era 20 m y el stride 10.
+6. `_buscar_epsg` mira primero un atributo cuyo nombre contenga `epsg`. En el GCOV real el CRS está en el dataset `projection`: un escalar con el atributo `epsg_code` (32629 o 32630 en esta pasada). Si ese dataset es un entero de tamaño 1, también se acepta. Si el contenido es texto con `EPSG`, se lee el código. Si no hay CRS, **no inventa el huso**: la escena se rechaza y el mensaje lo dice.
+7. Construye el `Affine` de rasterio con el centro del primer píxel y el paso, y convierte a dB. En potencia lineal, todo lo que queda por debajo de −50 dB se pone a NaN: es el relleno de borde (ceros que en dB caen hacia −140), no bosque.
 
 El test `test_leer_gcov_prefiere_hvhv_de_banda_l` fabrica un HDF5 mínimo con banda L a 0,1 (−10 dB) y banda S a 0,02, y comprueba que gana la L y que el EPSG declarado (32629) se respeta.
 
 ### 9.4 Por qué NISAR no entra en el índice por defecto
 
-El archivo real encontrado en CMR empieza en 2026 (la búsqueda lo confirma en el JSON de escenas). La validación mira incendios de 2025 y de 2026. Meter la banda L de 2026 dentro del índice y luego celebrar que “predice” 2025 sería mirar el futuro. Por eso:
+Las ocho escenas procesadas son del **13, 18 y 20 de octubre de 2026**. La validación mide hectáreas EFFIS de todo 2025 y de 2026. Una retrodispersión tomada en octubre de 2026 ya ha visto la mayor parte de esas dos campañas: el suelo quemado y el rebrote cambian el HV. Usarla como COMB y luego decir que el índice “anticipó” 2025–2026 sería puntuar con información posterior al suceso.
 
-- `fuente_combustible` del índice es Sentinel-1.
-- Si existe `vh_db_nisar`, el visor ofrece un interruptor para **sustituir** el componente de combustible por el HV de NISAR normalizado. La pantalla avisa de que esa vista ya no es la validación retrospectiva.
-- El manifiesto deja `nisar_en_indice` en falso.
+Por eso el índice publicado sigue siendo Sentinel-1 del verano de 2024:
 
-Cuando el archivo L cubra un verano entero anterior a la campaña que se quiera anticipar, el mismo `leer_gcov` puede pasar a ser el combustible por defecto. El sitio donde se decide es `pipeline.py`, no una constante escondida en el visor.
+- `nisar_en_indice` queda en falso en el manifiesto. `construir_componentes` no lee `vh_db_nisar`.
+- El visor, si la columna existe, ofrece un interruptor para **sustituir** el combustible por el HV de NISAR ya normalizado. La pantalla avisa de que esa vista deja de ser retrospectiva. El interruptor nace apagado.
+- La correlación de Pearson entre el VH municipal de Sentinel-1 (2024) y el HV de NISAR (octubre de 2026) es **r = 0,57** en los 313 municipios. Van en la misma dirección —el monte que devuelve más en banda C también tiende a devolver más en banda L—, pero no son intercambiables: 0,57 deja más de la mitad de la varianza sin explicar, y el desfase temporal impide usar la L como predictor de lo ya ocurrido.
+
+Cuando haya un verano de banda L anterior a la campaña que se quiera anticipar, el sitio donde se cambia el combustible por defecto es `pipeline.py` (`nisar_en_indice` y `construir_componentes`), no un interruptor escondido del visor.
 
 ## 10. Del píxel al municipio y a 0–1
 
@@ -263,3 +277,12 @@ La justificación de cada peso está en `docs/indice_y_pesos.md`. El visor los c
 - ASF. `asf_search`, en particular `ASFSession.auth_with_token` y `granule_search`. https://docs.asf.alaska.edu/asf_search/BestPractices/
 - NASA CMR. Búsqueda de gránulos sin autenticación. https://cmr.earthdata.nasa.gov/
 - Canadian Forest Service. Sistema FWI, el que EFFIS publica en la capa `mf010.fwi`. El FWI no es SAR; se documenta en `docs/fuentes/fwi.md` porque se cruza con él.
+
+## Combinación de escenas NISAR por municipio
+
+1. Cada escena GCOV (HVHV, banda L) se lee en dB, se anulan los píxeles de relleno (< −50 dB), se aplica un filtro de mediana 3×3 y se reproyecta a la rejilla común de 200 m (EPSG:25830).
+2. Para cada escena y municipio se calcula la **mediana zonal** de los píxeles válidos y la **fracción de cobertura** (píxeles válidos / píxeles del municipio).
+3. Una escena solo cuenta para un municipio si cubre **≥ 50 %** de sus píxeles (`COBERTURA_MINIMA = 0.5` en `sources/nisar.py`). Así se descartan las medianas calculadas con unos pocos píxeles del borde de la escena (el caso del valor atípico de −36,4 dB).
+4. `vh_db_nisar` es la **mediana entre las escenas válidas**. Columnas auxiliares: `n_escenas_nisar`, `cobertura_max_nisar` y `escenas_nisar` (ids de CMR).
+
+Ejemplo: `python -m prioridad_galicia.cli nisar-procesar --max-escenas 8 --escenas <prefijo1> <prefijo2> ...`

@@ -142,8 +142,10 @@ def ejecutar_pipeline(max_escenas_s1: int = 8, resolucion: float = 400, forzar: 
     manifiesto["nisar_en_indice"] = False
     manifiesto["nota_nisar"] = (
         "El índice por defecto usa Sentinel-1 del verano de 2024, anterior a la validación 2025-2026. "
-        "NISAR (archivo 2026) no entra en ese índice: sería posterior a parte de los incendios. "
-        "Si se procesa, el visor puede sustituir el combustible para ver el estado L-band, con el aviso correspondiente."
+        "Las escenas NISAR procesadas son del 13, 18 y 20 de octubre de 2026: posteriores a esa validación, "
+        "así que vh_db_nisar no entra en COMB. El visor puede sustituirlo con el interruptor, apagado al abrir. "
+        "La descarga usa Bearer directo: ASFSession.auth_with_token devuelve 403 porque la cuenta "
+        "aún no ha aceptado la EULA de la aplicación de ASF."
     )
     SALIDA_MANIFIESTO.write_text(json.dumps(manifiesto, ensure_ascii=False, indent=2), encoding="utf-8")
     logger.info("Salida: %s", SALIDA_GEOJSON)
@@ -164,7 +166,18 @@ def _fase(nombre: str, funcion, manifiesto: dict, anterior):
 def _unir_nisar(municipios, zonal: pd.DataFrame):
     zonal = zonal.copy()
     zonal["codigo_ine"] = zonal["codigo_ine"].astype(str).str.zfill(5)
-    columnas = [c for c in ("codigo_ine", "vh_db_nisar", "n_escenas_nisar", "polarizacion_nisar") if c in zonal.columns]
+    columnas = [
+        c
+        for c in (
+            "codigo_ine",
+            "vh_db_nisar",
+            "n_escenas_nisar",
+            "cobertura_max_nisar",
+            "escenas_nisar",
+            "polarizacion_nisar",
+        )
+        if c in zonal.columns
+    ]
     limpio = municipios.drop(columns=[c for c in columnas if c != "codigo_ine" and c in municipios.columns], errors="ignore")
     return limpio.merge(zonal[columnas], on="codigo_ine", how="left")
 

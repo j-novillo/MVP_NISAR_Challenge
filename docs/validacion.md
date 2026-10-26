@@ -13,7 +13,7 @@ La pregunta del MVP es concreta: **¿los municipios que más ardieron en 2025 y 
 | OSM | El extracto del servidor el día de la descarga | Tampoco es un resultado del fuego. |
 | Objetivo | Hectáreas EFFIS 2025-01-01 a 2026-12-31, intersección con el municipio | Lo que se quiere haber señalado. |
 
-NISAR no entra. Su archivo sobre Galicia, en el catálogo CMR, es de 2026.
+NISAR no entra en el índice que se evalúa. Las ocho escenas agregadas son del 13, 18 y 20 de octubre de 2026, es decir, posteriores a la mayor parte de las hectáreas de 2025 y 2026. Su HV correlaciona r = 0,57 con el VH de Sentinel-1 de 2024, pero esa cifra describe acuerdo entre sensores, no capacidad de anticipar el fuego. El interruptor del visor permite mirar la banda L; el JSON y el PNG guardados no la usan.
 
 ## Métricas
 
