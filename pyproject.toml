@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prioridad-galicia"
+version = "0.1.0"
+description = "Priorización territorial para la prevención de incendios forestales en Galicia con SAR (Sentinel-1 y NISAR)."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{name = "NASA Space Apps 2026 — Dancing with the SARs"}]
+dependencies = [
+  "geopandas>=1.0",
+  "pandas>=2.2",
+  "numpy>=1.26",
+  "shapely>=2.0",
+  "pyproj>=3.6",
+  "rasterio>=1.4",
+  "rioxarray>=0.18",
+  "xarray>=2024.1",
+  "pystac-client>=0.8",
+  "planetary-computer>=1.0",
+  "requests>=2.32",
+  "streamlit>=1.40",
+  "folium>=0.18",
+  "streamlit-folium>=0.24",
+  "matplotlib>=3.9",
+  "python-dotenv>=1.0",
+  "asf-search>=8.0",
+  "h5py>=3.11",
+  "tqdm>=4.66",
+  "pyogrio>=0.9",
+  "scipy>=1.13",
+  "branca>=0.8",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+prioridad-galicia = "prioridad_galicia.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,0 +1,110 @@
+{
+  "escenas": [
+    {
+      "id": "G4366686159-ASF",
+      "titulo": "NISAR_L2_PR_GCOV_033_015_A_022_2005_DHDH_A_20261013T053216_20261013T053251_P05023_N_F_J_001",
+      "inicio": "2026-10-13T05:32:16.000Z",
+      "municipios_cubiertos_50": 0,
+      "dataset": "science/LSAR/GCOV/grids/frequencyA/HVHV",
+      "polarizacion": "HVHV",
+      "epsg": 32629,
+      "stride": 10,
+      "paso_m": 20.0,
+      "modo_db": "lineal_a_db",
+      "frecuencia": "L"
+    },
+    {
+      "id": "G4366683964-ASF",
+      "titulo": "NISAR_L2_PR_GCOV_033_015_A_023_2005_DHDH_A_20261013T053250_20261013T053325_P05023_N_F_J_001",
+      "inicio": "2026-10-13T05:32:50.000Z",
+      "municipios_cubiertos_50": 310,
+      "dataset": "science/LSAR/GCOV/grids/frequencyA/HVHV",
+      "polarizacion": "HVHV",
+      "epsg": 32629,
+      "stride": 10,
+      "paso_m": 20.0,
+      "modo_db": "lineal_a_db",
+      "frecuencia": "L"
+    },
+    {
+      "id": "G4366571071-ASF",
+      "titulo": "NISAR_L2_PR_GCOV_033_015_A_024_2005_DHDH_A_20261013T053324_20261013T053333_P05023_N_P_J_001",
+      "inicio": "2026-10-13T05:33:24.000Z",
+      "municipios_cubiertos_50": 22,
+      "dataset": "science/LSAR/GCOV/grids/frequencyA/HVHV",
+      "polarizacion": "HVHV",
+      "epsg": 32629,
+      "stride": 10,
+      "paso_m": 20.0,
+      "modo_db": "lineal_a_db",
+      "frecuencia": "L"
+    },
+    {
+      "id": "G4379021322-ASF",
+      "titulo": "NISAR_L2_PR_GCOV_033_087_A_023_2005_DHDH_A_20261018T052429_20261018T052505_P05023_N_F_J_001",
+      "inicio": "2026-10-18T05:24:29.000Z",
+      "municipios_cubiertos_50": 28,
+      "dataset": "science/LSAR/GCOV/grids/frequencyA/HVHV",
+      "polarizacion": "HVHV",
+      "epsg": 32630,
+      "stride": 10,
+      "paso_m": 20.0,
+      "modo_db": "lineal_a_db",
+      "frecuencia": "L"
+    },
+    {
+      "id": "G4378957807-ASF",
+      "titulo": "NISAR_L2_PR_GCOV_033_087_A_024_2005_DHDH_A_20261018T052504_20261018T052513_P05023_N_P_J_001",
+      "inicio": "2026-10-18T05:25:04.000Z",
+      "municipios_cubiertos_50": 23,
+      "dataset": "science/LSAR/GCOV/grids/frequencyA/HVHV",
+      "polarizacion": "HVHV",
+      "epsg": 32629,
+      "stride": 10,
+      "paso_m": 20.0,
+      "modo_db": "lineal_a_db",
+      "frecuencia": "L"
+    },
+    {
+      "id": "G4382611745-ASF",
+      "titulo": "NISAR_L2_PR_GCOV_033_116_A_022_2005_DHDH_A_20261020T054035_20261020T054109_P05023_N_F_J_001",
+      "inicio": "2026-10-20T05:40:35.000Z",
+      "municipios_cubiertos_50": 0,
+      "dataset": "science/LSAR/GCOV/grids/frequencyA/HVHV",
+      "polarizacion": "HVHV",
+      "epsg": 32629,
+      "stride": 10,
+      "paso_m": 20.0,
+      "modo_db": "lineal_a_db",
+      "frecuencia": "L"
+    },
+    {
+      "id": "G4383722125-ASF",
+      "titulo": "NISAR_L2_PR_GCOV_033_124_D_067_2005_DHDH_A_20261020T192528_20261020T192603_P05023_N_F_J_001",
+      "inicio": "2026-10-20T19:25:28.000Z",
+      "municipios_cubiertos_50": 105,
+      "dataset": "science/LSAR/GCOV/grids/frequencyA/HVHV",
+      "polarizacion": "HVHV",
+      "epsg": 32629,
+      "stride": 10,
+      "paso_m": 20.0,
+      "modo_db": "lineal_a_db",
+      "frecuencia": "L"
+    },
+    {
+      "id": "G4383722161-ASF",
+      "titulo": "NISAR_L2_PR_GCOV_033_124_D_068_2005_DHDH_A_20261020T192602_20261020T192637_P05023_N_F_J_001",
+      "inicio": "2026-10-20T19:26:02.000Z",
+      "municipios_cubiertos_50": 5,
+      "dataset": "science/LSAR/GCOV/grids/frequencyA/HVHV",
+      "polarizacion": "HVHV",
+      "epsg": 32629,
+      "stride": 10,
+      "paso_m": 20.0,
+      "modo_db": "lineal_a_db",
+      "frecuencia": "L"
+    }
+  ],
+  "cobertura_minima": 0.5,
+  "combinacion": "mediana zonal por escena; mediana entre escenas con cobertura >= umbral"
+}

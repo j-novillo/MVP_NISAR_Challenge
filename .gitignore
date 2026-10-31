@@ -1,0 +1,24 @@
+.venv/
+*.egg-info/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env
+.streamlit/secrets.toml
+
+# Descargas pesadas y caché reproducible en local. Los productos ligeros sí van al repo.
+data/raw/
+data/cache/
+*.tif
+*.tiff
+*.h5
+*.hdf5
+*.nc
+*.pbf
+*.zip
+
+# El visor y los tests leen data/processed. No ignorar esa carpeta.
+!data/processed/
+!data/processed/**

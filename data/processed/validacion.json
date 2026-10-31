@@ -1,0 +1,63 @@
+{
+  "n_municipios": 313,
+  "ha_quemadas_validacion": 128563.5,
+  "municipios_con_fuego": 188,
+  "captura": {
+    "top_10": {
+      "municipios": 32,
+      "ha": 51045.17,
+      "fraccion_ha": 0.397,
+      "azar": 0.1
+    },
+    "top_20": {
+      "municipios": 63,
+      "ha": 66738.33,
+      "fraccion_ha": 0.5191,
+      "azar": 0.2
+    },
+    "top_30": {
+      "municipios": 94,
+      "ha": 100272.4,
+      "fraccion_ha": 0.7799,
+      "azar": 0.3
+    }
+  },
+  "auc": 0.6793,
+  "quintiles": [
+    {
+      "quintil": "Q1",
+      "municipios": 63,
+      "ha": 591.91,
+      "ha_media": 9.4,
+      "prioridad_media": 28.08
+    },
+    {
+      "quintil": "Q2",
+      "municipios": 62,
+      "ha": 5374.14,
+      "ha_media": 86.68,
+      "prioridad_media": 36.53
+    },
+    {
+      "quintil": "Q3",
+      "municipios": 63,
+      "ha": 13336.88,
+      "ha_media": 211.7,
+      "prioridad_media": 44.09
+    },
+    {
+      "quintil": "Q4",
+      "municipios": 62,
+      "ha": 42522.24,
+      "ha_media": 685.84,
+      "prioridad_media": 52.59
+    },
+    {
+      "quintil": "Q5",
+      "municipios": 63,
+      "ha": 66738.33,
+      "ha_media": 1059.34,
+      "prioridad_media": 62.98
+    }
+  ]
+}
